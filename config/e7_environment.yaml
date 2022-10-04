@@ -1,0 +1,12 @@
+level_0:
+  global_frame: level_0_map
+  maps_package: multimap_server
+  maps:
+    localization: maps/e7/map1.yaml
+    routes: maps/e7/map1.yaml
+level_1:
+  global_frame: level_1_map
+  maps_package: multimap_server
+  maps:
+    localization: maps/e7/map2.yaml
+    routes: maps/e7/map2.yaml

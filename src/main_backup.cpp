@@ -51,7 +51,6 @@
 #include <multimap_server_msgs/Environments.h>
 #include <multimap_server_msgs/LoadMap.h>
 #include <multimap_server_msgs/DumpMap.h>
-#include <multimap_server_msgs/PubMap.h>
 #include <multimap_server_msgs/LoadEnvironments.h>
 
 #ifdef HAVE_YAMLCPP_GT_0_5_0
@@ -226,10 +225,6 @@ public:
   {
     return map_fullname;
   }
-  nav_msgs::OccupancyGrid getMap()
-  {
-    return map_resp_.map;
-  }
 
 private:
   ros::NodeHandle n;
@@ -282,63 +277,12 @@ public:
     std::string environments_topic_name = "environments";
     environments_pub = pn.advertise<multimap_server_msgs::Environments>(environments_topic_name, 1, true);
 
-
-    // service for publishing one of loaded maps with existing (desired) topic name
-    std::string pub_map_service_name = "pub_map_with_name";
-//    std::string pub_map_service_name = "push_maps/" + ns + "/" + desired_name + "/" + "static_map";
-    pub_map_with_name_service = pn.advertiseService(pub_map_service_name, &MultimapServer::pubMapCallback, this);
-
-
     if (false == loadEnvironmentsFromYAML(fname))
     {
       ROS_ERROR("Multimap_server could not open %s. Shutting down", fname.c_str());
       exit(-1);
     }
   }
-
-    bool pubMapCallback(multimap_server_msgs::PubMap::Request& req, multimap_server_msgs::PubMap::Response& res)
-  {
-
-    std::string map_fullname = req.ns + "/" + req.map_name;
-    std::string pub_topic_name = req.desired_topic_name;
-
-//    map_resp_.map.info.map_load_time = ros::Time::now();
-//    map_resp_.map.header.stamp = ros::Time::now();
-    
-
-    if (isMapAlreadyLoaded(req.ns, req.map_name) == true)
-    {
-      std::vector<Map*>::iterator it;
-      for (it = maps_vector.begin(); it != maps_vector.end(); ++it)
-      {
-        if ((*it)->getMapFullName() == map_fullname)
-        {
-          nav_msgs::OccupancyGrid cur_map;
-          map_pub_with_name = pub_n.advertise<nav_msgs::OccupancyGrid>(pub_topic_name, 1);
-          cur_map = (*it)->getMap();
-          cur_map.info.map_load_time = ros::Time::now();
-          cur_map.header.frame_id = req.desired_frame_id;
-          cur_map.header.stamp = ros::Time::now();
-          cur_map.info.origin = req.desired_map_origin;
-          map_pub_with_name.publish(cur_map);
-
-          res.success = true;
-          res.msg = "map " + map_fullname + " published succesfully with the topic name of " + pub_topic_name;
-          return true;        
-        }
-      }
-    }
-    else
-    {
-      res.success = false;
-      res.msg = "pub_map service failed: There is no map loaded under the name " + map_fullname;
-      return true;
-    }
-    
-  }
-
-  ros::NodeHandle pub_n;
-
 
 private:
   ros::NodeHandle n;
@@ -350,9 +294,6 @@ private:
   ros::ServiceServer dump_map_service;
   ros::ServiceServer load_environments_service;
   ros::ServiceServer dump_environments_service;
-
-  ros::ServiceServer pub_map_with_name_service;
-  ros::Publisher map_pub_with_name;
 
   std::vector<Map*> maps_vector;
   multimap_server_msgs::Environments environments_vector;
